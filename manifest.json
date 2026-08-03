@@ -1,0 +1,8 @@
+{
+  "name": "PhaseOne",
+  "short_name": "PhaseOne",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#070709",
+  "theme_color": "#070709"
+}

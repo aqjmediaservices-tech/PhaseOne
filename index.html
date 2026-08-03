@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PhaseOne</title>
+
+  <!-- PWA Capabilities for Installation -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#070709" />
+  <link rel="manifest" href='data:application/manifest+json,{"name":"PhaseOne","short_name":"PhaseOne","start_url":".","display":"standalone","background_color":"#070709","theme_color":"#070709"}' />
+
+  <style>
+    :root {
+      --bg: #070709;
+      --card-bg: linear-gradient(180deg, #131318 0%, #0e0e12 100%);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-glow: rgba(255, 255, 255, 0.15);
+      
+      /* Dynamic Ring Color Palette */
+      --ring-green: #10b981;
+      --ring-green-glow: rgba(16, 185, 129, 0.35);
+      --ring-red: #ef4444;
+      --ring-red-glow: rgba(239, 68, 68, 0.35);
+      --ring-orange: #f59e0b;
+      --ring-orange-glow: rgba(245, 158, 11, 0.35);
+      --ring-blue: #3b82f6;
+
+      /* Protein Neon Pink Palette */
+      --ring-pink: #ec4899;
+      --ring-pink-glow: rgba(236, 72, 153, 0.35);
+
+      --text-main: #f4f4f5;
+      --text-muted: #8b8b96;
+      --input-bg: #18181d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Hide Scrollbars */
+    *::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    * {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background-color: var(--bg);
+      box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    }
+
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 18px 100px 18px;
+      display: none;
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding: 4px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #272730, #0c0c0e);
+      border: 1px solid var(--card-border-glow);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+    }
+
+    .app-icon-inner {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--ring-pink);
+      border-top-color: var(--ring-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 900;
+      color: #fff;
+      transform: rotate(-45deg);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(180deg, #ffffff, #a1a1aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .user-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .live-blinker {
+      width: 7px;
+      height: 7px;
+      background-color: var(--ring-green);
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 8px var(--ring-green);
+      animation: pulseBlink 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulseBlink {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .weight-badge {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .today-date {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 800;
+    }
+
+    /* Days Strip */
+    .days-strip {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 8px;
+    }
+
+    .day-circle {
+      flex: 1;
+      height: 64px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .day-circle:active { transform: scale(0.95); }
+
+    .day-circle.active {
+      background: #ffffff;
+      color: #000000;
+      border-color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+    }
+
+    .day-circle .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-top: 5px;
+      background: transparent;
+    }
+
+    .day-circle.completed .status-dot { background: var(--ring-green); box-shadow: 0 0 8px var(--ring-green); }
+    .day-circle.skipped .status-dot { background: var(--ring-red); box-shadow: 0 0 8px var(--ring-red); }
+
+    /* Centered Trackers */
+    .tracker-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 22px 14px;
+      margin-bottom: 24px;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .tracker-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .ring-wrapper {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .circle-svg {
+      transform: rotate(-90deg);
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .circle-bg {
+      fill: none;
+      stroke: #18181d;
+    }
+
+    .circle-progress {
+      fill: none;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s ease;
+    }
+
+    .ring-text-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    .ring-val {
+      font-size: 0.98rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .ring-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 1px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .split-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 13px 15px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .split-input:focus {
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.05);
+    }
+
+    .status-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-complete.active {
+      background: var(--ring-green);
+      color: #000000;
+      border-color: var(--ring-green);
+      box-shadow: 0 4px 16px var(--ring-green-glow);
+    }
+
+    .btn-skip.active {
+      background: var(--ring-red);
+      color: #ffffff;
+      border-color: var(--ring-red);
+      box-shadow: 0 4px 16px var(--ring-red-glow);
+    }
+
+    .btn-add {
+      width: 100%;
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      padding: 13px;
+      font-weight: 800;
+      border-radius: 14px;
+      margin-top: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn-add:active { transform: scale(0.98); opacity: 0.9; }
+
+    /* Exercises */
+    .exercise-item {
+      background: #141419;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .exercise-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .exercise-name {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 0.95rem;
+      width: 80%;
+      outline: none;
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease;
+    }
+
+    .btn-icon:hover { color: var(--ring-red); }
+
+    .sets-hdr {
+      display: grid;
+      grid-template-columns: 30px 1fr 1fr 30px;
+      gap: 8px;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .set-row {
+      display: grid;
+      grid-template-columns: 30px 1fr 1fr 30px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .set-num {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .set-input {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 0.85rem;
+      text-align: center;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+
+    .set-input:focus { border-color: rgba(255, 255, 255, 0.25); }
+
+    .btn-add-set {
+      background: transparent;
+      border: 1px dashed var(--card-border);
+      color: var(--text-muted);
+      border-radius: 10px;
+      padding: 10px;
+      width: 100%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s ease;
+    }
+
+    .btn-add-set:hover { background: rgba(255, 255, 255, 0.03); }
+
+    /* Meals */
+    .meal-item {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 0.8fr 30px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-control:focus { border-color: rgba(255, 255, 255, 0.25); }
+
+    /* Navigation */
+    nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 76px;
+      background: rgba(10, 10, 13, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: 12px;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 20%;
+      transition: color 0.2s ease;
+    }
+
+    .nav-item.active { color: #ffffff; }
+    .nav-icon-svg { width: 20px; height: 20px; fill: currentColor; }
+
+    /* Analytics Week Bubble Design */
+    .week-bubble {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .week-bubble-btn {
+      width: 100%;
+      padding: 16px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .week-days-container {
+      display: none;
+      padding: 12px 16px 16px 16px;
+      background: #09090b;
+      border-top: 1px solid var(--card-border);
+    }
+
+    .week-days-container.open { display: block; }
+
+    .analytics-day-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .analytics-day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .analytics-mini-ring {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 800;
+    }
+
+    .analytics-mini-ring.completed { border-color: var(--ring-green); color: var(--ring-green); }
+    .analytics-mini-ring.skipped { border-color: var(--ring-red); color: var(--ring-red); }
+
+    .day-detail-body {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--card-border);
+      font-size: 0.8rem;
+    }
+
+    .day-detail-body.open { display: block; }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--ring-red);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .icon-inline {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* Friends Section Styling */
+    .friend-card {
+      background: #141419;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .friend-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .friend-name {
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    .friend-status-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .friend-status-badge.completed { color: var(--ring-green); border: 1px solid var(--ring-green); }
+    .friend-status-badge.skipped { color: var(--ring-red); border: 1px solid var(--ring-red); }
+    .friend-status-badge.pending { color: var(--text-muted); border: 1px solid var(--card-border); }
+
+    .id-box {
+      background: var(--input-bg);
+      border: 1px dashed var(--card-border);
+      padding: 12px;
+      border-radius: 12px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      text-align: center;
+      user-select: all;
+      margin-bottom: 12px;
+      color: var(--ring-blue);
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+  
+  <!-- TAB 1: HOME -->
+  <div id="tab-home" class="tab-content active">
+    <header>
+      <div class="brand">
+        <div class="app-icon">
+          <div class="app-icon-inner">P1</div>
+        </div>
+        <div>
+          <div class="brand-title">PhaseOne</div>
+          <div class="user-subtitle">
+            <span class="live-blinker" title="System Active"></span>
+            <span id="greeting-name">Alex</span>
+            <span>•</span>
+            <span class="weight-badge" id="header-weight-badge">
+              <svg class="icon-inline" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9 9 9 0 0 0 9 9 9 9 0 0 0 9-9 9 9 0 0 0-9-9zm0 2a7 7 0 0 1 7 7c0 1.5-.5 2.9-1.3 4.1l-1.5-1.5a5 5 0 0 0-8.4 0l-1.5 1.5A7 7 0 0 1 12 5zm0 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
+              <span>75 kg</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="today-date" id="current-date-display">...</div>
+    </header>
+
+    <!-- Days Strip -->
+    <div class="days-strip" id="days-strip"></div>
+
+    <!-- Centered Trackers -->
+    <div class="tracker-section">
+      <!-- Fitness Ring Tracker -->
+      <div class="tracker-box">
+        <div class="ring-wrapper">
+          <svg class="circle-svg" width="120" height="120">
+            <circle class="circle-bg" cx="60" cy="60" r="48" stroke-width="8"></circle>
+            <circle class="circle-progress" id="fitness-progress" cx="60" cy="60" r="48" stroke-width="8"
+                    stroke="var(--ring-blue)" stroke-dasharray="301.59" stroke-dashoffset="301.59"></circle>
+          </svg>
+          <div class="ring-text-overlay">
+            <div class="ring-val" id="fitness-val">0 / 0</div>
+            <div class="ring-sub" id="fitness-subtext">done</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nutrition Ring Tracker -->
+      <div class="tracker-box">
+        <div class="ring-wrapper">
+          <svg class="circle-svg" width="120" height="120">
+            <!-- Outer Ring (Calories) -->
+            <circle class="circle-bg" cx="60" cy="60" r="50" stroke-width="7"></circle>
+            <circle class="circle-progress" id="cal-progress" cx="60" cy="60" r="50" stroke-width="7"
+                    stroke="var(--ring-orange)" stroke-dasharray="314.15" stroke-dashoffset="314.15"></circle>
+            
+            <!-- Inner Ring (Protein) -->
+            <circle class="circle-bg" cx="60" cy="60" r="38" stroke-width="7"></circle>
+            <circle class="circle-progress" id="protein-progress" cx="60" cy="60" r="38" stroke-width="7"
+                    stroke="var(--ring-pink)" stroke-dasharray="238.76" stroke-dashoffset="238.76"></circle>
+          </svg>
+          <div class="ring-text-overlay">
+            <div class="ring-val" id="nutrition-subtext">0 kcal</div>
+            <div class="ring-sub" id="protein-subtext">0g protein</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workout Editor -->
+    <div class="card">
+      <input type="text" id="split-name-input" class="split-input" placeholder="Workout Title (e.g., Push Day)" />
+      
+      <div class="status-actions">
+        <button class="btn btn-complete" id="btn-complete-workout" onclick="setWorkoutStatus('completed')">
+          <svg class="icon-inline" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Complete
+        </button>
+        <button class="btn btn-skip" id="btn-skip-workout" onclick="setWorkoutStatus('skipped')">
+          <svg class="icon-inline" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg> Skip Day
+        </button>
+      </div>
+
+      <div class="card-title">
+        <svg class="icon-inline" viewBox="0 0 24 24"><path d="M6 5v14M18 5v14M3 8v8M21 8v8M6 12h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>
+        <span>Exercises</span>
+      </div>
+      <div id="exercises-container"></div>
+      <button class="btn btn-add" onclick="addExercise()">
+        <svg class="icon-inline" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Exercise
+      </button>
+    </div>
+
+    <!-- Nutrition Editor -->
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon-inline" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.9 3.45 4.38L6 22h2l.55-8.62C10.54 12.9 12 11.12 12 9V2h-1v7zm6-7c-2.21 0-4 1.79-4 4v7h2v9h2V2z"/></svg>
+        <span>Meals & Macros</span>
+      </div>
+      <div id="meals-container"></div>
+      <button class="btn btn-add" onclick="addMeal()">
+        <svg class="icon-inline" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Meal
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 2: ANALYTICS -->
+  <div id="tab-analytics" class="tab-content">
+    <header>
+      <div class="brand">
+        <div class="brand-title">Weekly Analytics</div>
+      </div>
+    </header>
+    <div id="analytics-history-container"></div>
+  </div>
+
+  <!-- TAB 3: FRIENDS -->
+  <div id="tab-friends" class="tab-content">
+    <header>
+      <div class="brand">
+        <div class="brand-title">Community & Friends</div>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="card-title">Your Shareable ID</div>
+      <div class="id-box" id="my-user-id-display">Generating...</div>
+      <p style="font-size:0.75rem; color:var(--text-muted);">Share this ID with friends so they can add you.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Add Friend</div>
+      <div class="form-group">
+        <label>Friend's User ID</label>
+        <input type="text" id="add-friend-id-input" class="form-control" placeholder="Paste friend ID here..." />
+      </div>
+      <button class="btn btn-add" onclick="addFriendById()">Connect Friend</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Friends Activity Today</div>
+      <div id="friends-list-container">
+        <div style="text-align:center; color:var(--text-muted); padding:10px;">No friends added yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: PROFILE -->
+  <div id="tab-profile" class="tab-content">
+    <header>
+      <div class="brand">
+        <div class="brand-title">Profile & Weight</div>
+      </div>
+    </header>
+    <div class="card">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="prof-name" class="form-control" onchange="saveProfile()" />
+      </div>
+      <div class="form-group">
+        <label>Current Weight (kg)</label>
+        <input type="number" id="prof-weight" class="form-control" onchange="updateCurrentWeight(this.value)" />
+      </div>
+      <div class="form-group">
+        <label>Height (cm)</label>
+        <input type="number" id="prof-height" class="form-control" onchange="saveProfile()" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Daily Goals</div>
+      <div class="form-group">
+        <label>Daily Calorie Target (kcal)</label>
+        <input type="number" id="goal-calories" class="form-control" onchange="saveProfile()" />
+      </div>
+      <div class="form-group">
+        <label>Daily Protein Target (grams)</label>
+        <input type="number" id="goal-protein" class="form-control" onchange="saveProfile()" />
+      </div>
+      <div class="form-group">
+        <label>Goal Target Weight (kg)</label>
+        <input type="number" id="goal-weight" class="form-control" onchange="saveProfile()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: SETTINGS -->
+  <div id="tab-settings" class="tab-content">
+    <header>
+      <div class="brand">
+        <div class="brand-title">Data & Options</div>
+      </div>
+    </header>
+    <div class="card">
+      <div class="card-title">Export / Restore</div>
+      <button class="btn btn-add" onclick="exportData()" style="margin-bottom: 10px;">Export Data File</button>
+      <button class="btn" onclick="document.getElementById('import-file-input').click()" style="width: 100%;">Load Saved File</button>
+      <input type="file" id="import-file-input" style="display: none;" onchange="importData(event)" />
+    </div>
+
+    <div class="card" style="border-color: rgba(239, 68, 68, 0.3);">
+      <div class="card-title" style="color: var(--ring-red);">Reset</div>
+      <button class="btn btn-danger" style="width: 100%; padding: 12px; font-weight: 800;" onclick="resetAppData()">Reset Everything</button>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <nav>
+    <div class="nav-item active" onclick="switchTab('tab-home', this)">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <div>Home</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('tab-analytics', this)">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zM16.2 13H19v6h-2.8z"/></svg>
+      <div>Analytics</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('tab-friends', this)">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <div>Friends</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('tab-profile', this)">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <div>Profile</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('tab-settings', this)">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/></svg>
+      <div>Settings</div>
+    </div>
+  </nav>
+</div>
+
+<!-- Firebase SDK Integration -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDummyKeyForPhaseOneAppSetup",
+    authDomain: "phaseone-ed1a3.firebaseapp.com",
+    projectId: "phaseone-ed1a3",
+    storageBucket: "phaseone-ed1a3.appspot.com",
+    messagingSenderId: "1234567890",
+    appId: "1:1234567890:web:phaseone"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const DEFAULT_STATE = {
+    userId: 'user_' + Math.random().toString(36).substring(2, 9),
+    friends: [],
+    profile: {
+      name: 'Alex',
+      height: 175,
+      weight: 75,
+      goalCalories: 2500,
+      goalProtein: 150,
+      goalWeight: 70
+    },
+    weightHistory: [],
+    logs: {}
+  };
+
+  window.appState = JSON.parse(localStorage.getItem('PHASE_ONE_DATA')) || DEFAULT_STATE;
+  if (!window.appState.userId) window.appState.userId = 'user_' + Math.random().toString(36).substring(2, 9);
+  if (!window.appState.friends) window.appState.friends = [];
+
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  window.selectedDateStr = getTodayStr();
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!window.appState.weightHistory || window.appState.weightHistory.length === 0) {
+      window.appState.weightHistory = [{ date: getTodayStr(), weight: window.appState.profile.weight || 75 }];
+    }
+    document.getElementById('my-user-id-display').innerText = window.appState.userId;
+    renderHeader();
+    renderDaysStrip();
+    loadDayData(window.selectedDateStr);
+    loadProfileInputs();
+
+    syncToCloud();
+  });
+
+  window.saveState = function() {
+    localStorage.setItem('PHASE_ONE_DATA', JSON.stringify(window.appState));
+    updateTrackerRings();
+    renderDaysStrip();
+    syncToCloud();
+  }
+
+  function syncToCloud() {
+    try {
+      setDoc(doc(db, "users", window.appState.userId), window.appState, { merge: true });
+    } catch(e) { console.error("Cloud Sync Error", e); }
+  }
+
+  function getTodayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function getWeightForDate(dateStr) {
+    if (!window.appState.weightHistory || window.appState.weightHistory.length === 0) return window.appState.profile.weight || 75;
+    const sorted = [...window.appState.weightHistory].sort((a,b) => a.date.localeCompare(b.date));
+    let effectiveWeight = sorted[0].weight;
+    for (let entry of sorted) {
+      if (entry.date <= dateStr) effectiveWeight = entry.weight;
+      else break;
+    }
+    return effectiveWeight;
+  }
+
+  window.updateCurrentWeight = function(newWeight) {
+    const wt = Number(newWeight);
+    if (!wt) return;
+    window.appState.profile.weight = wt;
+    const today = getTodayStr();
+    const existingIndex = window.appState.weightHistory.findIndex(h => h.date === today);
+    if (existingIndex >= 0) window.appState.weightHistory[existingIndex].weight = wt;
+    else window.appState.weightHistory.push({ date: today, weight: wt });
+    window.saveState();
+    renderHeader();
+  }
+
+  function getOrCreateDayLog(dateStr) {
+    if (!window.appState.logs[dateStr]) {
+      window.appState.logs[dateStr] = {
+        splitName: '',
+        status: 'pending',
+        exercises: [],
+        meals: [],
+        weightSnap: getWeightForDate(dateStr)
+      };
+    }
+    return window.appState.logs[dateStr];
+  }
+
+  function renderHeader() {
+    const now = new Date();
+    const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+    document.getElementById('current-date-display').innerText = now.toLocaleDateString('en-US', options).toUpperCase();
+    document.getElementById('greeting-name').innerText = window.appState.profile.name || 'Athlete';
+    document.getElementById('header-weight-badge').querySelector('span').innerText = `${getWeightForDate(window.selectedDateStr)} kg`;
+  }
+
+  function renderDaysStrip() {
+    const strip = document.getElementById('days-strip');
+    strip.innerHTML = '';
+    const curr = new Date();
+    const first = curr.getDate() - (curr.getDay() === 0 ? 6 : curr.getDay() - 1);
+    
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(curr.setDate(first + i));
+      const dateStr = dayDate.toISOString().split('T')[0];
+      const dayName = daysOfWeek[i];
+      const dayNum = dayDate.getDate();
+
+      const dayLog = window.appState.logs[dateStr] || {};
+      const status = dayLog.status || 'pending';
+
+      const circle = document.createElement('div');
+      circle.className = `day-circle ${dateStr === window.selectedDateStr ? 'active' : ''} ${status}`;
+      circle.onclick = () => selectDate(dateStr);
+      circle.innerHTML = `
+        <div>${dayName}</div>
+        <div style="font-size:0.85rem; margin-top:2px;">${dayNum}</div>
+        <div class="status-dot"></div>
+      `;
+      strip.appendChild(circle);
+    }
+  }
+
+  function selectDate(dateStr) {
+    window.selectedDateStr = dateStr;
+    renderDaysStrip();
+    loadDayData(dateStr);
+    renderHeader();
+  }
+
+  function loadDayData(dateStr) {
+    const dayLog = getOrCreateDayLog(dateStr);
+
+    const splitInput = document.getElementById('split-name-input');
+    splitInput.value = dayLog.splitName || '';
+    splitInput.onchange = (e) => {
+      dayLog.splitName = e.target.value;
+      window.saveState();
+    };
+
+    document.getElementById('btn-complete-workout').classList.toggle('active', dayLog.status === 'completed');
+    document.getElementById('btn-skip-workout').classList.toggle('active', dayLog.status === 'skipped');
+
+    renderExercises();
+    renderMeals();
+    updateTrackerRings();
+  }
+
+  window.setWorkoutStatus = function(status) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.status = dayLog.status === status ? 'pending' : status;
+    loadDayData(window.selectedDateStr);
+    window.saveState();
+  }
+
+  function renderExercises() {
+    const container = document.getElementById('exercises-container');
+    container.innerHTML = '';
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+
+    dayLog.exercises.forEach((ex, exIdx) => {
+      const exEl = document.createElement('div');
+      exEl.className = 'exercise-item';
+
+      let setsHtml = ex.sets.map((set, setIdx) => `
+        <div class="set-row">
+          <div class="set-num">${setIdx + 1}</div>
+          <input type="number" class="set-input" placeholder="kg" value="${set.weight || ''}" 
+                 onchange="updateSet(${exIdx}, ${setIdx}, 'weight', this.value)">
+          <input type="number" class="set-input" placeholder="reps" value="${set.reps || ''}" 
+                 onchange="updateSet(${exIdx}, ${setIdx}, 'reps', this.value)">
+          <button class="btn-icon" onclick="removeSet(${exIdx}, ${setIdx})">✕</button>
+        </div>
+      `).join('');
+
+      exEl.innerHTML = `
+        <div class="exercise-header">
+          <input type="text" class="exercise-name" value="${ex.name || ''}" placeholder="Exercise Name" 
+                 onchange="updateExName(${exIdx}, this.value)">
+          <button class="btn-icon" onclick="removeExercise(${exIdx})">✕</button>
+        </div>
+        <div class="sets-hdr">
+          <div>Set</div><div>Weight</div><div>Reps</div><div></div>
+        </div>
+        ${setsHtml}
+        <button class="btn-add-set" onclick="addSet(${exIdx})">
+          <svg class="icon-inline" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Set
+        </button>
+      `;
+      container.appendChild(exEl);
+    });
+  }
+
+  window.addExercise = function() {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.exercises.push({ name: '', sets: [{ weight: '', reps: '' }] });
+    renderExercises();
+    window.saveState();
+  }
+
+  window.removeExercise = function(exIdx) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.exercises.splice(exIdx, 1);
+    renderExercises();
+    window.saveState();
+  }
+
+  window.updateExName = function(exIdx, val) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.exercises[exIdx].name = val;
+    window.saveState();
+  }
+
+  window.addSet = function(exIdx) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.exercises[exIdx].sets.push({ weight: '', reps: '' });
+    renderExercises();
+    window.saveState();
+  }
+
+  window.updateSet = function(exIdx, setIdx, field, val) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.exercises[exIdx].sets[setIdx][field] = val;
+    window.saveState();
+  }
+
+  window.removeSet = function(exIdx, setIdx) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.exercises[exIdx].sets.splice(setIdx, 1);
+    renderExercises();
+    window.saveState();
+  }
+
+  function renderMeals() {
+    const container = document.getElementById('meals-container');
+    container.innerHTML = '';
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+
+    dayLog.meals.forEach((meal, mIdx) => {
+      const mEl = document.createElement('div');
+      mEl.className = 'meal-item';
+      mEl.innerHTML = `
+        <input type="text" class="set-input" style="text-align:left;" placeholder="Meal Name" value="${meal.name || ''}"
+               onchange="updateMeal(${mIdx}, 'name', this.value)">
+        <input type="number" class="set-input" placeholder="kcal" value="${meal.calories || ''}"
+               onchange="updateMeal(${mIdx}, 'calories', this.value)">
+        <input type="number" class="set-input" placeholder="prot" value="${meal.protein || ''}"
+               onchange="updateMeal(${mIdx}, 'protein', this.value)">
+        <button class="btn-icon" onclick="removeMeal(${mIdx})">✕</button>
+      `;
+      container.appendChild(mEl);
+    });
+  }
+
+  window.addMeal = function() {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.meals.push({ name: '', calories: '', protein: '' });
+    renderMeals();
+    window.saveState();
+  }
+
+  window.updateMeal = function(mIdx, field, val) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.meals[mIdx][field] = val;
+    renderMeals();
+    window.saveState();
+  }
+
+  window.removeMeal = function(mIdx) {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+    dayLog.meals.splice(mIdx, 1);
+    renderMeals();
+    window.saveState();
+  }
+
+  function getMacroRingColor(current, target, baseColor) {
+    if (!target || target <= 0) return baseColor;
+    const ratio = current / target;
+    if (ratio < 0.80) return baseColor;
+    if (ratio <= 1.10) return 'var(--ring-green)';
+    return 'var(--ring-red)';
+  }
+
+  function isExerciseCompleted(ex) {
+    if (!ex || !ex.sets || ex.sets.length === 0) return false;
+    return ex.sets.some(s => s.weight !== '' && s.reps !== '' && s.weight !== null && s.reps !== null);
+  }
+
+  function updateTrackerRings() {
+    const dayLog = getOrCreateDayLog(window.selectedDateStr);
+
+    const fitnessRing = document.getElementById('fitness-progress');
+    const fitnessCircumference = 301.59;
+    let fitnessPercent = 0;
+
+    const totalExercises = dayLog.exercises.length;
+    const completedExercisesCount = dayLog.exercises.filter(isExerciseCompleted).length;
+
+    if (dayLog.status === 'completed') {
+      fitnessPercent = 1;
+      fitnessRing.setAttribute('stroke', 'var(--ring-green)');
+    } else if (dayLog.status === 'skipped') {
+      fitnessPercent = 1;
+      fitnessRing.setAttribute('stroke', 'var(--ring-red)');
+    } else {
+      fitnessPercent = totalExercises > 0 ? (completedExercisesCount / totalExercises) : 0;
+      fitnessRing.setAttribute('stroke', fitnessPercent === 1 && totalExercises > 0 ? 'var(--ring-green)' : 'var(--ring-blue)');
+    }
+
+    fitnessRing.style.strokeDashoffset = fitnessCircumference - (fitnessPercent * fitnessCircumference);
+    document.getElementById('fitness-val').innerText = `${completedExercisesCount} / ${totalExercises}`;
+    document.getElementById('fitness-subtext').innerText = `completed`;
+
+    let totalCalories = 0;
+    let totalProtein = 0;
+    dayLog.meals.forEach(m => {
+      totalCalories += Number(m.calories) || 0;
+      totalProtein += Number(m.protein) || 0;
+    });
+
+    const targetCal = Number(window.appState.profile.goalCalories) || 2500;
+    const targetProt = Number(window.appState.profile.goalProtein) || 150;
+
+    const calRing = document.getElementById('cal-progress');
+    const calCircumference = 314.15;
+    const calPct = Math.min(totalCalories / targetCal, 1);
+    calRing.style.strokeDashoffset = calCircumference - (calPct * calCircumference);
+    calRing.setAttribute('stroke', getMacroRingColor(totalCalories, targetCal, 'var(--ring-orange)'));
+
+    const protRing = document.getElementById('protein-progress');
+    const protCircumference = 238.76;
+    const protPct = Math.min(totalProtein / targetProt, 1);
+    protRing.style.strokeDashoffset = protCircumference - (protPct * protCircumference);
+    protRing.setAttribute('stroke', getMacroRingColor(totalProtein, targetProt, 'var(--ring-pink)'));
+
+    document.getElementById('nutrition-subtext').innerText = `${totalCalories} kcal`;
+    document.getElementById('protein-subtext').innerText = `${totalProtein}g protein`;
+  }
+
+  function renderAnalytics() {
+    const container = document.getElementById('analytics-history-container');
+    container.innerHTML = '';
+
+    const sortedDates = Object.keys(window.appState.logs).sort().reverse();
+    if (sortedDates.length === 0) {
+      container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">No workout logs found yet.</div>`;
+      return;
+    }
+
+    const weekBubble = document.createElement('div');
+    weekBubble.className = 'week-bubble';
+
+    let daysListHtml = '';
+    sortedDates.forEach(dateStr => {
+      const log = window.appState.logs[dateStr];
+      let totalCal = 0;
+      let totalProt = 0;
+      (log.meals || []).forEach(m => {
+        totalCal += Number(m.calories) || 0;
+        totalProt += Number(m.protein) || 0;
+      });
+
+      const dayWeight = getWeightForDate(dateStr);
+      let ringClass = 'pending';
+      let statusLabel = 'REST';
+      if (log.status === 'completed') { ringClass = 'completed'; statusLabel = '✓'; }
+      if (log.status === 'skipped') { ringClass = 'skipped'; statusLabel = '✕'; }
+
+      let exercisesSummary = (log.exercises || []).map(ex => `
+        <div style="margin-top:4px; font-weight:600;">
+          • ${ex.name || 'Exercise'}: ${ex.sets.length} sets
+        </div>
+      `).join('');
+
+      daysListHtml += `
+        <div class="analytics-day-card" onclick="toggleDayDetail('${dateStr}')">
+          <div class="analytics-day-header">
+            <div>
+              <strong>${dateStr}</strong>
+              <span style="font-size:0.75rem; color:var(--text-muted); margin-left:6px;">(${dayWeight} kg)</span>
+            </div>
+            <div class="analytics-mini-ring ${ringClass}">${statusLabel}</div>
+          </div>
+          <div id="detail-${dateStr}" class="day-detail-body">
+            <div><strong>Split:</strong> ${log.splitName || 'General Workout'}</div>
+            <div><strong>Macros:</strong> ${totalCal} kcal | ${totalProt}g Protein</div>
+            <div style="margin-top:6px;">${exercisesSummary || '<em>No exercises logged</em>'}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    weekBubble.innerHTML = `
+      <button class="week-bubble-btn" onclick="toggleWeekBubble('week-1-container')">
+        <span>Week 1 Logs</span>
+        <span>▼</span>
+      </button>
+      <div id="week-1-container" class="week-days-container open">
+        ${daysListHtml}
+      </div>
+    `;
+
+    container.appendChild(weekBubble);
+  }
+
+  window.toggleWeekBubble = function(containerId) {
+    document.getElementById(containerId).classList.toggle('open');
+  }
+
+  window.toggleDayDetail = function(dateStr) {
+    const el = document.getElementById(`detail-${dateStr}`);
+    if (el) el.classList.toggle('open');
+  }
+
+  function loadProfileInputs() {
+    document.getElementById('prof-name').value = window.appState.profile.name || '';
+    document.getElementById('prof-weight').value = window.appState.profile.weight || '';
+    document.getElementById('prof-height').value = window.appState.profile.height || '';
+    document.getElementById('goal-calories').value = window.appState.profile.goalCalories || '';
+    document.getElementById('goal-protein').value = window.appState.profile.goalProtein || '';
+    document.getElementById('goal-weight').value = window.appState.profile.goalWeight || '';
+  }
+
+  window.saveProfile = function() {
+    window.appState.profile.name = document.getElementById('prof-name').value;
+    window.appState.profile.height = document.getElementById('prof-height').value;
+    window.appState.profile.goalCalories = document.getElementById('goal-calories').value;
+    window.appState.profile.goalProtein = document.getElementById('goal-protein').value;
+    window.appState.profile.goalWeight = document.getElementById('goal-weight').value;
+    window.saveState();
+    renderHeader();
+  }
+
+  window.switchTab = function(tabId, el) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    el.classList.add('active');
+    if (tabId === 'tab-analytics') renderAnalytics();
+    if (tabId === 'tab-friends') renderFriendsList();
+  }
+
+  /* Friends Realtime Sync Logic */
+  window.addFriendById = async function() {
+    const fId = document.getElementById('add-friend-id-input').value.trim();
+    if (!fId) return alert('Please enter a valid Friend ID.');
+    if (fId === window.appState.userId) return alert('You cannot add yourself.');
+    
+    if (window.appState.friends.includes(fId)) {
+      return alert('Friend already added!');
+    }
+
+    const friendDoc = await getDoc(doc(db, "users", fId));
+    if (friendDoc.exists()) {
+      window.appState.friends.push(fId);
+      window.saveState();
+      document.getElementById('add-friend-id-input').value = '';
+      renderFriendsList();
+      alert('Friend added successfully!');
+    } else {
+      alert('User ID not found in database.');
+    }
+  }
+
+  function renderFriendsList() {
+    const container = document.getElementById('friends-list-container');
+    container.innerHTML = '';
+
+    if (!window.appState.friends || window.appState.friends.length === 0) {
+      container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:10px;">No friends added yet.</div>`;
+      return;
+    }
+
+    const today = getTodayStr();
+
+    window.appState.friends.forEach(fId => {
+      const fCard = document.createElement('div');
+      fCard.className = 'friend-card';
+      fCard.id = `friend-card-${fId}`;
+      fCard.innerHTML = `
+        <div class="friend-header">
+          <div class="friend-name" id="fname-${fId}">Loading...</div>
+          <div class="friend-status-badge pending" id="fstatus-${fId}">Syncing...</div>
+        </div>
+        <div style="font-size:0.8rem; color:var(--text-muted);" id="fdetail-${fId}">Listening for updates...</div>
+      `;
+      container.appendChild(fCard);
+
+      onSnapshot(doc(db, "users", fId), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const fName = data.profile?.name || 'Athlete';
+          const todayLog = data.logs?.[today] || {};
+          const status = todayLog.status || 'pending';
+          const splitName = todayLog.splitName || 'General Workout';
+          
+          let totalCal = 0;
+          let totalProt = 0;
+          (todayLog.meals || []).forEach(m => {
+            totalCal += Number(m.calories) || 0;
+            totalProt += Number(m.protein) || 0;
+          });
+
+          document.getElementById(`fname-${fId}`).innerText = fName;
+          
+          const statusBadge = document.getElementById(`fstatus-${fId}`);
+          statusBadge.className = `friend-status-badge ${status}`;
+          statusBadge.innerText = status.toUpperCase();
+
+          document.getElementById(`fdetail-${fId}`).innerHTML = `
+            <div><strong>Workout:</strong> ${splitName}</div>
+            <div><strong>Macros:</strong> ${totalCal} kcal | ${totalProt}g Protein</div>
+          `;
+        }
+      });
+    });
+  }
+
+  window.exportData = function() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.appState));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = `PhaseOne_Data_${getTodayStr()}.json`;
+    a.click();
+  }
+
+  window.importData = function(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        window.appState = JSON.parse(e.target.result);
+        window.saveState();
+        location.reload();
+      } catch (err) {
+        alert("Invalid file.");
+      }
+    };
+    reader.readAsText(event.target.files[0]);
+  }
+
+  window.resetAppData = function() {
+    localStorage.removeItem('PHASE_ONE_DATA');
+    window.appState = DEFAULT_STATE;
+    location.reload();
+  }
+</script>
+</body>
+</html>
