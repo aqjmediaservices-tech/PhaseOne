@@ -78,6 +78,69 @@
       box-shadow: 0 0 50px rgba(0,0,0,0.8);
     }
 
+    /* Auth Modal Overlay */
+    #auth-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border-glow);
+      border-radius: 24px;
+      padding: 28px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .auth-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .auth-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .auth-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: var(--input-bg);
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .auth-toggle button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .auth-toggle button.active {
+      background: #ffffff;
+      color: #000000;
+    }
+
     .tab-content {
       flex: 1;
       overflow-y: auto;
@@ -543,7 +606,7 @@
       -webkit-backdrop-filter: blur(20px);
       border-top: 1px solid var(--card-border);
       display: flex;
-      justify-space-around;
+      justify-space-around: space-between;
       align-items: center;
       padding-bottom: 12px;
       z-index: 100;
@@ -706,6 +769,36 @@
 
 <div id="app-container">
   
+  <!-- AUTHENTICATION OVERLAY -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-title">PhaseOne</div>
+      <div class="auth-subtitle">Sign in or create an account to start tracking</div>
+      
+      <div class="auth-toggle">
+        <button id="auth-btn-login" class="active" onclick="setAuthMode('login')">Log In</button>
+        <button id="auth-btn-register" onclick="setAuthMode('register')">Register</button>
+      </div>
+
+      <div class="form-group">
+        <label>Username (Unique Account ID)</label>
+        <input type="text" id="auth-username" class="form-control" placeholder="e.g. alex_fits" />
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="auth-password" class="form-control" placeholder="••••••••" />
+      </div>
+
+      <div class="form-group" id="auth-name-group" style="display: none;">
+        <label>Display Name (Visible to Friends)</label>
+        <input type="text" id="auth-displayname" class="form-control" placeholder="e.g. Alex S." />
+      </div>
+
+      <button class="btn btn-add" id="auth-submit-btn" onclick="handleAuthSubmit()">Log In</button>
+    </div>
+  </div>
+
   <!-- TAB 1: HOME -->
   <div id="tab-home" class="tab-content active">
     <header>
@@ -824,16 +917,16 @@
     </header>
 
     <div class="card">
-      <div class="card-title">Your Shareable ID</div>
+      <div class="card-title">Your Shareable Username</div>
       <div class="id-box" id="my-user-id-display">Generating...</div>
-      <p style="font-size:0.75rem; color:var(--text-muted);">Share this ID with friends so they can add you.</p>
+      <p style="font-size:0.75rem; color:var(--text-muted);">Share this username with friends so they can connect with you.</p>
     </div>
 
     <div class="card">
       <div class="card-title">Add Friend</div>
       <div class="form-group">
-        <label>Friend's User ID</label>
-        <input type="text" id="add-friend-id-input" class="form-control" placeholder="Paste friend ID here..." />
+        <label>Friend's Username</label>
+        <input type="text" id="add-friend-id-input" class="form-control" placeholder="Paste friend's username..." />
       </div>
       <button class="btn btn-add" onclick="addFriendById()">Connect Friend</button>
     </div>
@@ -855,7 +948,7 @@
     </header>
     <div class="card">
       <div class="form-group">
-        <label>Your Name</label>
+        <label>Display Name (Visible to Friends)</label>
         <input type="text" id="prof-name" class="form-control" onchange="saveProfile()" />
       </div>
       <div class="form-group">
@@ -892,6 +985,11 @@
         <div class="brand-title">Data & Options</div>
       </div>
     </header>
+    <div class="card">
+      <div class="card-title">Account</div>
+      <button class="btn" onclick="logoutUser()" style="width: 100%;">Log Out / Switch Account</button>
+    </div>
+
     <div class="card">
       <div class="card-title">Export / Restore</div>
       <button class="btn btn-add" onclick="exportData()" style="margin-bottom: 10px;">Export Data File</button>
@@ -947,11 +1045,14 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  let currentAuthMode = 'login';
+
   const DEFAULT_STATE = {
-    userId: 'user_' + Math.random().toString(36).substring(2, 9),
+    userId: '',
+    password: '',
     friends: [],
     profile: {
-      name: 'Alex',
+      name: 'Athlete',
       height: 175,
       weight: 75,
       goalCalories: 2500,
@@ -962,14 +1063,86 @@
     logs: {}
   };
 
-  window.appState = JSON.parse(localStorage.getItem('PHASE_ONE_DATA')) || DEFAULT_STATE;
-  if (!window.appState.userId) window.appState.userId = 'user_' + Math.random().toString(36).substring(2, 9);
-  if (!window.appState.friends) window.appState.friends = [];
+  window.appState = JSON.parse(localStorage.getItem('PHASE_ONE_DATA')) || null;
 
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   window.selectedDateStr = getTodayStr();
 
   window.addEventListener('DOMContentLoaded', () => {
+    if (window.appState && window.appState.userId) {
+      document.getElementById('auth-overlay').style.display = 'none';
+      initAppUI();
+    } else {
+      document.getElementById('auth-overlay').style.display = 'flex';
+    }
+  });
+
+  window.setAuthMode = function(mode) {
+    currentAuthMode = mode;
+    document.getElementById('auth-btn-login').classList.toggle('active', mode === 'login');
+    document.getElementById('auth-btn-register').classList.toggle('active', mode === 'register');
+    document.getElementById('auth-name-group').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('auth-submit-btn').innerText = mode === 'login' ? 'Log In' : 'Create Account';
+  }
+
+  window.handleAuthSubmit = async function() {
+    const rawUsername = document.getElementById('auth-username').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    const displayName = document.getElementById('auth-displayname').value.trim();
+
+    if (!rawUsername || !password) {
+      return alert('Please enter both a username and password.');
+    }
+
+    const username = rawUsername.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+    if (username.length < 3) {
+      return alert('Username must be at least 3 alphanumeric characters.');
+    }
+
+    const userDocRef = doc(db, "users", username);
+
+    if (currentAuthMode === 'register') {
+      const docSnap = await getDoc(userDocRef);
+      if (docSnap.exists()) {
+        return alert('Username is already taken. Please choose another.');
+      }
+
+      window.appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      window.appState.userId = username;
+      window.appState.password = password;
+      window.appState.profile.name = displayName || username;
+      window.appState.weightHistory = [{ date: getTodayStr(), weight: 75 }];
+
+      await setDoc(userDocRef, window.appState);
+      saveStateLocal();
+      document.getElementById('auth-overlay').style.display = 'none';
+      initAppUI();
+    } else {
+      const docSnap = await getDoc(userDocRef);
+      if (!docSnap.exists()) {
+        return alert('User not found. Check your username or register a new account.');
+      }
+
+      const cloudData = docSnap.data();
+      if (cloudData.password !== password) {
+        return alert('Incorrect password.');
+      }
+
+      window.appState = cloudData;
+      saveStateLocal();
+      document.getElementById('auth-overlay').style.display = 'none';
+      initAppUI();
+    }
+  }
+
+  window.logoutUser = function() {
+    localStorage.removeItem('PHASE_ONE_DATA');
+    window.appState = null;
+    location.reload();
+  }
+
+  function initAppUI() {
     if (!window.appState.weightHistory || window.appState.weightHistory.length === 0) {
       window.appState.weightHistory = [{ date: getTodayStr(), weight: window.appState.profile.weight || 75 }];
     }
@@ -978,18 +1151,22 @@
     renderDaysStrip();
     loadDayData(window.selectedDateStr);
     loadProfileInputs();
-
     syncToCloud();
-  });
+  }
+
+  function saveStateLocal() {
+    localStorage.setItem('PHASE_ONE_DATA', JSON.stringify(window.appState));
+  }
 
   window.saveState = function() {
-    localStorage.setItem('PHASE_ONE_DATA', JSON.stringify(window.appState));
+    saveStateLocal();
     updateTrackerRings();
     renderDaysStrip();
     syncToCloud();
   }
 
   function syncToCloud() {
+    if (!window.appState || !window.appState.userId) return;
     try {
       setDoc(doc(db, "users", window.appState.userId), window.appState, { merge: true });
     } catch(e) { console.error("Cloud Sync Error", e); }
@@ -1000,7 +1177,7 @@
   }
 
   function getWeightForDate(dateStr) {
-    if (!window.appState.weightHistory || window.appState.weightHistory.length === 0) return window.appState.profile.weight || 75;
+    if (!window.appState || !window.appState.weightHistory || window.appState.weightHistory.length === 0) return window.appState?.profile?.weight || 75;
     const sorted = [...window.appState.weightHistory].sort((a,b) => a.date.localeCompare(b.date));
     let effectiveWeight = sorted[0].weight;
     for (let entry of sorted) {
@@ -1391,8 +1568,10 @@
 
   /* Friends Realtime Sync Logic */
   window.addFriendById = async function() {
-    const fId = document.getElementById('add-friend-id-input').value.trim();
-    if (!fId) return alert('Please enter a valid Friend ID.');
+    const rawFId = document.getElementById('add-friend-id-input').value.trim();
+    if (!rawFId) return alert('Please enter a valid Friend Username.');
+    
+    const fId = rawFId.toLowerCase();
     if (fId === window.appState.userId) return alert('You cannot add yourself.');
     
     if (window.appState.friends.includes(fId)) {
@@ -1407,7 +1586,7 @@
       renderFriendsList();
       alert('Friend added successfully!');
     } else {
-      alert('User ID not found in database.');
+      alert('Username not found.');
     }
   }
 
@@ -1447,7 +1626,7 @@
       onSnapshot(doc(db, "users", fId), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const fName = data.profile?.name || 'Athlete';
+          const fName = data.profile?.name || fId;
           const todayLog = data.logs?.[today] || {};
           const status = todayLog.status || 'pending';
           const splitName = todayLog.splitName || 'General Workout';
